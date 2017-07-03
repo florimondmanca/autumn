@@ -11,11 +11,10 @@ function Player:init(t)
         y = 'number',
         speed = 'number',
     })
+    self.x = t.x
+    self.y = t.y
+    self.speed = t.speed
     self.image = love.graphics.newImage('assets/img/player_left.png')
-end
-
-function Player:draw()
-    -- love.graphics.draw(self.image, self.x, self.y)
 end
 
 return Player
