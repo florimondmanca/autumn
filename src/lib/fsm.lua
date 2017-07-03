@@ -85,27 +85,6 @@ function FiniteStateMachine:setup(mockup)
             self.states[name].on_leave = callbackFunction
         end)
     end
-
-    -- set __index to access on_before_, on_after_ (on_), on_enter_, on_leave_ functions
-    local mt = getmetatable(self)
-    local __index = mt.__index
-    function mt.__index(self, key)
-        local value
-
-        value = onMatch('on_before_', key, function(name) return self.events[name].on_before end)
-        if value then return value end
-
-        value = onMatch('on_after_', key, function(name) return self.events[name].on_after end)
-        if value then return value end
-
-        value = onMatch('on_enter_', key, function(name) return self.states[name].on_enter end)
-        if value then return value end
-
-        value = onMatch('on_leave_', key, function(name) return self.states[name].on_leave end)
-        if value then return value end
-
-        return __index(self, key)
-    end
 end
 
 function FiniteStateMachine:update()
