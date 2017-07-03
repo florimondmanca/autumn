@@ -6,10 +6,16 @@ local w, h = love.graphics.getDimensions()
 
 local S = SceneBuilder()
 
-S:addObject{
-    script = 'entity.staticimage',
-    arguments = {z = -10, filename = 'assets/img/background.png'}
-}
+S:addObjectAs('background', {
+    x = 0,
+    y = 0,
+    z = -10,
+    image = love.graphics.newImage('assets/img/background.png'),
+    draw = function(self)
+        love.graphics.setColor(255, 255, 255)
+        love.graphics.draw(self.image, self.x, self.y)
+    end,
+})
 
 S:addObjectAs('player', {
     script = 'entity.player',
@@ -20,101 +26,118 @@ S:addObjectAs('player', {
     }
 })
 
-local player_walkanimation_left
+-- define the player's rendering state machine
 do
-    local image, frames = utils.loadSpriteSheet('assets/sprite/player_left_walk.png', 12, 14)
-    player_walkanimation_left = require('components.animator'){
-        image = image,
-        frames = frames,
-        period = .1,
+    local player_idle_left_image = require('components.staticimage'){
+        filename = 'assets/img/player_left.png',
         getObject = function() return S.scene.objects.player end,
     }
-end
-
-local player_walkanimation_right
-do
-    local image, frames = utils.loadSpriteSheet('assets/sprite/player_right_walk.png', 12, 14)
-    player_walkanimation_right = require('components.animator'){
-        image = image,
-        frames = frames,
-        period = .1,
+    local player_idle_right_image = require('components.staticimage'){
+        filename = 'assets/img/player_right.png',
         getObject = function() return S.scene.objects.player end,
     }
-end
 
-S:addObjectAs('player_statemachine', {
-    script = 'components.statemachine',
-    arguments = {
-        getObject = function() return S.scene.objects.player end,
-        initial = 'idle',
-        states = {
-            idle = {
-                data = {
-                    images = {
-                        left =  love.graphics.newImage(
-                            'assets/img/player_left.png'),
-                        right = love.graphics.newImage(
-                            'assets/img/player_right.png'),
+    local player_walkanimation_left
+    do
+        local image, frames = utils.loadSpriteSheet('assets/sprite/player_left_walk.png', 12, 14)
+        player_walkanimation_left = require('components.animator'){
+            image = image,
+            frames = frames,
+            period = .1,
+            getObject = function() return S.scene.objects.player end,
+        }
+    end
+
+    local player_walkanimation_right
+    do
+        local image, frames = utils.loadSpriteSheet('assets/sprite/player_right_walk.png', 12, 14)
+        player_walkanimation_right = require('components.animator'){
+            image = image,
+            frames = frames,
+            period = .1,
+            getObject = function() return S.scene.objects.player end,
+        }
+    end
+
+    S:addObjectAs('player_fsm', {
+        script = 'components.statemachine2',
+        arguments = {
+            getObject = function() return S.scene.objects.player end,
+            mockup = {
+                events = {
+                    startup = {
+                        from = 'none',
+                        to = 'idle',
+                        trigger = function() return true end,
+                        on_after = function()
+                            S.scene.objects.player.draw = function(self)
+                                player_idle_left_image:draw()
+                            end
+                        end,
                     },
-                    side = 'right',
-                },
-                draw = function(self, object)
-                    love.graphics.draw(self.data.images[self.data.side], object.x, object.y)
-                end,
-                transitions = {
-                    to_walk_left = {
-                        on = function() return love.keyboard.isDown('left') end,
-                        action = function(switchTo)
+                    walk_left = {
+                        from = 'idle', to = 'walking_left',
+                        trigger = function()
+                            return love.keyboard.isDown('left')
+                        end,
+                        on_after = function()
                             player_walkanimation_left:start()
-                            switchTo 'walk_left'
-                        end
+                            S.scene.objects.player.draw = function(self)
+                                player_walkanimation_left:draw()
+                            end
+                            S.scene.objects.player.update = function(self, dt)
+                                self.x = self.x - self.speed * dt
+                            end
+                        end,
                     },
-                    to_walk_right = {
-                        on = function() return love.keyboard.isDown('right') end,
-                        action = function(switchTo)
+                    walk_right = {
+                        from = 'idle', to = 'walking_right',
+                        trigger = function()
+                            return love.keyboard.isDown('right')
+                        end,
+                        on_after = function()
                             player_walkanimation_right:start()
-                            switchTo 'walk_right'
+                            S.scene.objects.player.draw = function(self)
+                                player_walkanimation_right:draw()
+                            end
+                            S.scene.objects.player.update = function(self, dt)
+                                self.x = self.x + self.speed * dt
+                            end
+                        end,
+                    },
+                    rest_left = {
+                        from = 'walking_left', to = 'idle',
+                        trigger = function()
+                            return not love.keyboard.isDown('left')
                         end
                     },
+                    rest_right = {
+                        from = 'walking_right', to = 'idle',
+                        trigger = function()
+                            return not love.keyboard.isDown('right')
+                        end
+                    },
+                },
+                callbacks = {
+                    on_leave_walking_left = function(self)
+                        player_walkanimation_left:stop()
+                        S.scene.objects.player.draw = function(self)
+                            player_idle_left_image:draw()
+                        end
+                        S.scene.objects.player.update = function() end
+                    end,
+                    on_leave_walking_right = function(self)
+                        player_walkanimation_right:stop()
+                        S.scene.objects.player.draw = function(self)
+                            player_idle_right_image:draw()
+                        end
+                        S.scene.objects.player.update = function() end
+                    end,
                 }
             },
-
-            walk_left = {
-                data = {},
-                update = function(self, object, dt)
-                    object.x = object.x - object.speed * dt
-                end,
-                draw = function(self) player_walkanimation_left:draw() end,
-                transitions = {
-                    to_idle = {
-                        on = function() return not love.keyboard.isDown('left') end,
-                        action = function(switchTo)
-                            player_walkanimation_left:stop()
-                            switchTo('idle', {side='left'})
-                        end
-                    },
-                },
-            },
-
-            walk_right = {
-                data = {},
-                update = function(self, object, dt)
-                    object.x = object.x + object.speed * dt
-                end,
-                draw = function(self) player_walkanimation_right:draw() end,
-                transitions = {
-                    to_idle = {
-                        on = function() return not love.keyboard.isDown('right') end,
-                        action = function(switchTo)
-                            player_walkanimation_right:stop()
-                            switchTo('idle', {side='right'})
-                        end
-                    },
-                },
-            },
-        },
-    }
-})
+        }
+    })
+end
 
 S:addDrawTransformation(function() love.graphics.scale(4) end)
 

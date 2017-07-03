@@ -7,5 +7,5 @@ love.graphics.setDefaultFilter('nearest', 'nearest')
 
 function love.load()
     gamestate.registerEvents()
-    gamestate.switch(require('scenes/mainfsm'):build())
+    gamestate.switch(require('scenes/main'):build())
 end
