@@ -64,19 +64,46 @@ do
         arguments = {
             getObject = function() return S.scene.objects.player end,
             mockup = {
-                initial = 'idle',
                 events = {
+                    startup = {
+                        from = 'none',
+                        to = 'idle',
+                        trigger = function() return true end,
+                        on_after = function()
+                            S.scene.objects.player.draw = function(self)
+                                player_idle_left_image:draw()
+                            end
+                        end,
+                    },
                     walk_left = {
                         from = 'idle', to = 'walking_left',
                         trigger = function()
                             return love.keyboard.isDown('left')
-                        end
+                        end,
+                        on_after = function()
+                            player_walkanimation_left:start()
+                            S.scene.objects.player.draw = function(self)
+                                player_walkanimation_left:draw()
+                            end
+                            S.scene.objects.player.update = function(self, dt)
+                                self.x = self.x - self.speed * dt
+                            end
+                        end,
                     },
                     walk_right = {
                         from = 'idle', to = 'walking_right',
                         trigger = function()
                             return love.keyboard.isDown('right')
-                        end
+                        end,
+                        on_after = function()
+                            player_walkanimation_right:start()
+                            S.scene.objects.player.draw = function(self)
+                                player_walkanimation_right:draw()
+                            end
+                            S.scene.objects.player.update = function(self, dt)
+                                self.x = self.x + self.speed * dt
+                            end
+                        end,
                     },
                     rest_left = {
                         from = 'walking_left', to = 'idle',
@@ -92,35 +119,12 @@ do
                     },
                 },
                 callbacks = {
-                    on_after_startup = function(self)
-                        S.scene.objects.player.draw = function(self)
-                            player_idle_left_image:draw()
-                        end
-                    end,
-                    on_after_walk_left = function(self)
-                        player_walkanimation_left:start()
-                        S.scene.objects.player.draw = function(self)
-                            player_walkanimation_left:draw()
-                        end
-                        S.scene.objects.player.update = function(self, dt)
-                            self.x = self.x - self.speed * dt
-                        end
-                    end,
                     on_leave_walking_left = function(self)
                         player_walkanimation_left:stop()
                         S.scene.objects.player.draw = function(self)
                             player_idle_left_image:draw()
                         end
                         S.scene.objects.player.update = function() end
-                    end,
-                    on_after_walk_right = function(self)
-                        player_walkanimation_right:start()
-                        S.scene.objects.player.draw = function(self)
-                            player_walkanimation_right:draw()
-                        end
-                        S.scene.objects.player.update = function(self, dt)
-                            self.x = self.x + self.speed * dt
-                        end
                     end,
                     on_leave_walking_right = function(self)
                         player_walkanimation_right:stop()

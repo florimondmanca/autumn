@@ -28,20 +28,19 @@ function FiniteStateMachine:hasState(state)
     return self.states[state] ~= nil
 end
 
-function FiniteStateMachine:addEvent(name, from, to, trigger)
+function FiniteStateMachine:addEvent(name, from, to, trigger, on_before, on_after)
     self.events[name] = {
         name = name,
         from = from,
         to = to,
-        on_before = function() end,
-        on_after = function() end,
+        on_before = on_before or function() end,
+        on_after = on_after or function() end,
         trigger = trigger,
         call = function(event, ...)
             event.on_before(self, event.name, event.from, event.to, ...)
             event.on_after(self, event.name, event.from, event.to, ...)
             self.states[event.from].on_leave(self, event.name, event.from, event.to, ...)
             self.states[event.to].on_enter(self, event.name, event.from, event.to, ...)
-
             self.current = event.to
         end
     }
@@ -51,22 +50,16 @@ function FiniteStateMachine:setup(mockup)
     mockup = mockup or {}
     mockup.events = mockup.events or {}
 
-    if mockup.initial then
-        mockup.events['startup'] = {from = 'none', to = mockup.initial, trigger = function() return true end}
-    end
-
     -- register states and events from the events{} table
     for eventName, eventTable in pairs(mockup.events) do
-        assert(type(eventName) == 'string', 'events can only be string (got ' .. tostring(eventName) .. ')')
         local from, to, trigger = eventTable.from, eventTable.to, eventTable.trigger or function() end
         assert(from, 'invalid event ' .. eventName .. ': `from` state missing')
         assert(to, 'invalid event ' .. eventName .. ': `to` state missing')
-        assert(type(trigger) == 'function')
 
         if not self:hasState(from) then self:addState(from) end
         if not self:hasState(to) then self:addState(to) end
 
-        self:addEvent(eventName, from, to, trigger)
+        self:addEvent(eventName, from, to, trigger, eventTable.on_before, eventTable.on_after)
     end
 
     -- register callbacks from the callbacks{} table
