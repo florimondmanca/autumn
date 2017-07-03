@@ -1,5 +1,5 @@
 local lume = require 'lib.lume'
-local Camera = require 'core.Camera'
+local Camera = require 'core.camera'
 local Pool = require 'core.pool'
 
 local GameScene = Pool:extend()

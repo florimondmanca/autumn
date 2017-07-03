@@ -2,9 +2,8 @@ local gamestate = require 'lib.gamestate'
 
 require 'core.soundmanager'
 math.randomseed(os.time())
-
--- increase pixel size
-love.graphics.scale(4)
+-- nearest neigbor interpolation
+love.graphics.setDefaultFilter('nearest', 'nearest')
 
 function love.load()
     gamestate.registerEvents()

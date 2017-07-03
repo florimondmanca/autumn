@@ -138,6 +138,18 @@ function Builder:addCallback(name, func)
     end)
 end
 
+function Builder:addDrawTransformation(transf)
+    lume.push(self.funcs, function(scene)
+        local draw = scene.draw
+        function scene:draw()
+            love.graphics.push()
+            transf()
+            draw(self)
+            love.graphics.pop()
+        end
+    end)
+end
+
 function Builder:build()
     -- create a new scene subclass
     local funcs = self.funcs
