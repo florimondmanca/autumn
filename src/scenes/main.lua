@@ -8,14 +8,14 @@ local S = SceneBuilder()
 
 S:addObject{
     script = 'entity.staticimage',
-    arguments = {z = -100, filename = 'assets/img/background.png'}
+    arguments = {z = -10, filename = 'assets/img/background.png'}
 }
 
 S:addObjectAs('player', {
     script = 'entity.player',
     arguments = {
         x = w/8,
-        y = 0,
+        y = h/8,
         speed = 15,
     }
 })

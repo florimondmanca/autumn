@@ -1,19 +1,19 @@
-local Entity = require 'core.entity'
+local Component = require 'core.component'
 
-local StaticImage = Entity:extend()
+local StaticImage = Component:extend()
 
+local init = StaticImage.init
 function StaticImage:init(t)
+    init(self, t)
     if type(t.filename) == 'string' then
         self.image = love.graphics.newImage(t.filename)
     else
         self.image = t.image or error('StaticImage requires love.graphics.Image image or string filename')
     end
-    self.x = t.x or 0
-    self.y = t.y or 0
 end
 
 function StaticImage:draw()
-    love.graphics.draw(self.image, self.x, self.y)
+    love.graphics.draw(self.image, self:getObject().x, self:getObject().y)
 end
 
 return StaticImage

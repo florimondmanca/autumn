@@ -3,7 +3,7 @@ local lume = require 'lib.lume'
 local Signal = require 'lib.signal'
 local GameScene = require 'core.gamescene'
 
-local function buildObject(container, key, objectTable)
+local function buildObject(container, objectName, objectTable)
     local object
     if objectTable.arguments and objectTable.script then
         local args = objectTable.arguments
@@ -14,17 +14,17 @@ local function buildObject(container, key, objectTable)
     else
         object = objectTable
     end
-    if type(key) == 'string' then
-        container:addAs(key, object)
+    if type(objectName) == 'string' then
+        container:addAs(objectName, object)
     else
         container:add(object)
     end
 end
 
 local function buildGroup(group, groupTable)
-    for key, objectTable in pairs(groupTable.objects or {}) do
+    for objectName, objectTable in pairs(groupTable.objects or {}) do
         objectTable.z = (objectTable.z or 0) + (groupTable.z or 0)
-        buildObject(group, key, objectTable)
+        buildObject(group, objectName, objectTable)
     end
 end
 
