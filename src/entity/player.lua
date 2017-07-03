@@ -36,7 +36,7 @@ local function createRenderers(player)
         }
     end
 
-    player.renderers = {
+    return {
         idle_left = idle_left_image,
         idle_right = idle_right_image,
         walk_left = walkanimation_left,
@@ -58,7 +58,7 @@ function Player:init(t)
     self.y = t.y
     self.speed = t.speed
 
-    createRenderers(self)
+    self.renderers = createRenderers(self)
 
     local function setRenderer(name, setup)
         setup = setup or function() end

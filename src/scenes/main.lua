@@ -1,5 +1,4 @@
 local lume = require 'lib.lume'
-local utils = require 'utils'
 local SceneBuilder = require 'core.scenebuilder'
 
 local w, h = love.graphics.getDimensions()
