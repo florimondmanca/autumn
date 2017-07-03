@@ -60,7 +60,7 @@ do
     end
 
     S:addObjectAs('player_fsm', {
-        script = 'components.statemachine2',
+        script = 'components.statemachine',
         arguments = {
             getObject = function() return S.scene.objects.player end,
             mockup = {
