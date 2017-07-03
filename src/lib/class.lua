@@ -1,47 +1,103 @@
--- class.lua
+local Class = {}
 
-local function class(base, init)
-   local c = {}    -- a new class instance
-   if not init and type(base) == 'function' then
-      init = base
-      base = nil
-   elseif type(base) == 'table' then
-    -- our new class is a shallow copy of the base class!
-      for i,v in pairs(base) do
-         c[i] = v
-      end
-      c._base = base
-   end
-   -- the class will be the metatable for all its objects,
-   -- and they will look up their methods in it.
-   c.__index = c
+-- default (empty) constructor
+function Class:init() end
 
-   -- expose a constructor which can be called by <classname>(<args>)
-   local mt = {}
-   mt.__call = function(_, ...)
-       local obj = {}
-       setmetatable(obj,c)
-       if init then
-          init(obj,...)
-       else
-          -- make sure that any stuff from the base class is initialized!
-          if base and base.init then
-          base.init(obj, ...)
-          end
-       end
-       return obj
-   end
-   c.init = init
-   c.is_a = function(self, klass)
-      local m = getmetatable(self)
-      while m do
-         if m == klass then return true end
-         m = m._base
-      end
-      return false
-   end
-   setmetatable(c, mt)
-   return c
+-- create a subclass
+function Class:extend(obj)
+	obj = obj or {}
+
+	local function copyTable(table, destination)
+		table = table or {}
+		local result = destination or {}
+
+		for k, v in pairs(table) do
+			if not result[k] then
+				if type(v) == "table" and k ~= "__index" and k ~= "__newindex" then
+					result[k] = copyTable(v)
+				else
+					result[k] = v
+				end
+			end
+		end
+
+		return result
+	end
+
+	copyTable(self, obj)
+
+	obj._ = obj._ or {}
+
+	local mt = {}
+
+	-- create new objects directly, like o = Object()
+	mt.__call = function(self, ...)
+		return self:new(...)
+	end
+
+	-- allow for getters and setters
+	mt.__index = function(table, key)
+		local val = rawget(table._, key)
+		if val and type(val) == "table" and (val.get ~= nil or val.value ~= nil) then
+			if val.get then
+				if type(val.get) == "function" then
+					return val.get(table, val.value)
+				else
+					return val.get
+				end
+			elseif val.value then
+				return val.value
+			end
+		else
+			return val
+		end
+	end
+
+	mt.__newindex = function(table, key, value)
+		local val = rawget(table._, key)
+		if val and type(val) == "table" and ((val.set ~= nil and val._ == nil) or val.value ~= nil) then
+			local v = value
+			if val.set then
+				if type(val.set) == "function" then
+					v = val.set(table, value, val.value)
+				else
+					v = val.set
+				end
+			end
+			val.value = v
+			if val and val.afterSet then val.afterSet(table, v) end
+		else
+			table._[key] = value
+		end
+	end
+
+	setmetatable(obj, mt)
+
+	return obj
+end
+
+-- set properties outside the constructor or other functions
+function Class:set(prop, value)
+	if not value and type(prop) == "table" then
+		for k, v in pairs(prop) do
+			rawset(self._, k, v)
+		end
+	else
+		rawset(self._, prop, value)
+	end
+end
+
+-- create an instance of an object with constructor parameters
+function Class:new(...)
+	local obj = self:extend({})
+	if obj.init then obj:init(...) end
+	return obj
+end
+
+
+local function class(attr)
+	attr = attr or {}
+	return Class:extend(attr)
 end
 
 return class
